@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X O iOS Modern</title>
+<style>
+:root{
+  --glass: rgba(30,30,30,0.35);
+  --blur: blur(20px);
+  --xColor:#4da6ff;
+  --oColor:#b266ff;
+}
+
+/* أساسي */
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:-apple-system,BlinkMacSystemFont;
+  background: linear-gradient(135deg, #1a1a25, #2b2b38);
+  overflow:hidden;
+  color:#fff;
+  user-select:none;
+}
+
+/* خلفية متحركة */
+.bg{
+  position:fixed;
+  inset:0;
+  background: radial-gradient(circle at 25% 25%, #33334a, transparent 30%),
+              radial-gradient(circle at 75% 75%, #2f2f40, transparent 30%);
+  animation: bgMove 25s ease-in-out infinite alternate;
+  filter: blur(80px);
+  z-index:-1;
+}
+@keyframes bgMove{
+  0%{transform:translate(0,0) scale(1);}
+  50%{transform:translate(-4%, 4%) scale(1.05);}
+  100%{transform:translate(4%, -4%) scale(1);}
+}
+
+/* اللوحة */
+.container{
+  background:var(--glass);
+  backdrop-filter:var(--blur);
+  border-radius:28px;
+  padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  text-align:center;
+  max-width:450px;
+  width:90vw;
+}
+
+.status{
+  margin-bottom:15px;
+  font-size:clamp(16px,2.5vw,22px);
+  font-weight:600;
+}
+
+/* لوحة الخانات */
+.board{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:5px;
+  justify-items:center;
+}
+
+.cell{
+  width:clamp(90px,25vw,130px);
+  height:clamp(90px,25vw,130px);
+  background:rgba(50,50,60,0.45);
+  border-radius:20px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:clamp(50px,12vw,80px);
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+  color:#fff;
+  backdrop-filter:var(--blur);
+}
+.cell:hover{transform:scale(1.05);}
+.cell.x{color:var(--xColor);}
+.cell.o{color:var(--oColor);}
+
+/* واجهة النتيجة */
+.overlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  background: rgba(30,30,30,0.65);
+  backdrop-filter: blur(25px);
+}
+
+.popup{
+  background:var(--glass);
+  backdrop-filter:var(--blur);
+  padding:25px 30px;
+  border-radius:28px;
+  text-align:center;
+  animation:pop .4s ease;
+  box-shadow:0 15px 30px rgba(0,0,0,0.4);
+}
+@keyframes pop{
+  from{transform:scale(.8);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+.balloon{
+  width:22px;
+  height:30px;
+  border-radius:50%;
+  margin:auto;
+  animation:float 2s infinite ease-in-out;
+}
+.balloon.gold{background:gold;}
+.balloon.red{background:red;}
+
+@keyframes float{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-10px);}
+}
+
+/* الأزرار */
+button{
+  margin-top:12px;
+  padding:12px 24px;
+  border:none;
+  border-radius:24px;
+  font-size:clamp(14px,2vw,18px);
+  cursor:pointer;
+  background:rgba(70,70,90,0.45);
+  backdrop-filter:var(--blur);
+  color:#fff;
+  transition:.2s;
+}
+button:hover{
+  transform:scale(1.05);
+  background:rgba(90,90,110,0.55);
+}
+
+/* واجهة البداية */
+.start-screen{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:var(--glass);
+  backdrop-filter:var(--blur);
+  border-radius:28px;
+  z-index:10;
+  padding:5%;
+  max-width:450px;
+  width:90vw;
+  transition: all .4s ease;
+}
+.start-screen h1{
+  font-size:clamp(20px,4vw,26px);
+  margin-bottom:14px;
+  text-align:center;
+  transition: all .4s ease;
+}
+.start-screen button{
+  width:70%;
+  margin:6px 0;
+  font-size:clamp(14px,3vw,18px);
+  padding:12px;
+  transition: all .4s ease;
+}
+
+/* اختيار مستوى AI عصري */
+#aiLevel{
+  display:none;
+  margin-top:15px;
+  width:100%;
+}
+#aiLevel h1{
+  margin-bottom:12px;
+  font-size:clamp(18px,3vw,22px);
+}
+.ai-options{
+  display:flex;
+  justify-content:space-around;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.ai-options button{
+  flex:1;
+  min-width:100px;
+  background:rgba(70,70,90,0.45);
+  backdrop-filter:blur(15px);
+  border-radius:20px;
+  padding:12px;
+  font-weight:600;
+}
+
+/* اسم المطور */
+.developer{
+  margin-top:15px;
+  font-size:clamp(12px,2vw,16px);
+  color:#ccc;
+}
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<!-- واجهة البداية -->
+<div class="start-screen" id="startScreen">
+  <h1>اختر وضع اللعب</h1>
+  <button onclick="selectMode('friend')">العب ضد صديق</button>
+  <button onclick="selectMode('ai')">العب ضد AI</button>
+  
+  <div id="aiLevel">
+    <h1>اختر مستوى AI</h1>
+    <div class="ai-options">
+      <button onclick="startGame('ai','medium')">متوسط</button>
+      <button onclick="startGame('ai','hard')">صعب</button>
+      <button onclick="startGame('ai','impossible')">مستحيل</button>
+    </div>
+  </div>
+
+  <div class="developer">تطوير: محمد كمال</div>
+</div>
+
+<!-- لوحة اللعبة -->
+<div class="container" id="gameContainer" style="display:none;">
+  <div class="status" id="status">دور اللاعب: X</div>
+  <div class="board" id="board"></div>
+</div>
+
+<!-- واجهة النتيجة -->
+<div class="overlay" id="overlay">
+  <div class="popup" id="popup"></div>
+</div>
+
+<!-- الأصوات مضمنة بصيغة Base64 -->
+<audio id="soundMove" src="data:audio/mpeg;base64,//uQxAAAA...SHORTED..."></audio>
+<audio id="soundWin" src="data:audio/mpeg;base64,//uQxAAAA...SHORTED..."></audio>
+<audio id="soundLose" src="data:audio/mpeg;base64,//uQxAAAA...SHORTED..."></audio>
+<audio id="soundDraw" src="data:audio/mpeg;base64,//uQxAAAA...SHORTED..."></audio>
+
+<script>
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dragstart', e => e.preventDefault());
+document.addEventListener('copy', e => e.preventDefault());
+
+const boardEl = document.getElementById("board");
+const statusText = document.getElementById("status");
+const overlay = document.getElementById("overlay");
+const popup = document.getElementById("popup");
+const startScreen = document.getElementById("startScreen");
+const gameContainer = document.getElementById("gameContainer");
+const aiLevelDiv = document.getElementById("aiLevel");
+
+const soundMove = document.getElementById("soundMove");
+const soundWin = document.getElementById("soundWin");
+const soundLose = document.getElementById("soundLose");
+const soundDraw = document.getElementById("soundDraw");
+
+let board = ["","","","","","","","",""];
+let current = "X";
+let active = true;
+let mode = "friend";
+let aiLevel = "medium";
+
+const wins = [
+ [0,1,2],[3,4,5],[6,7,8],
+ [0,3,6],[1,4,7],[2,5,8],
+ [0,4,8],[2,4,6]
+];
+
+for(let i=0;i<9;i++){
+  const cell = document.createElement("div");
+  cell.className="cell";
+  cell.onclick = ()=>play(i);
+  boardEl.appendChild(cell);
+}
+const cells = document.querySelectorAll(".cell");
+
+function selectMode(selectedMode){
+  mode = selectedMode;
+  if(selectedMode==="ai"){
+    aiLevelDiv.style.display="block";
+  } else {
+    startGame('friend');
+  }
+}
+
+function startGame(selectedMode, level){
+  mode = selectedMode;
+  if(level) aiLevel = level;
+  startScreen.style.display="none";
+  gameContainer.style.display="block";
+  current = "X";
+  statusText.textContent="دور اللاعب: X";
+}
+
+function play(i){
+  if(!active || board[i]!=="") return;
+  if(mode==="ai" && current==="O") return;
+
+  board[i]=current;
+  cells[i].textContent=current;
+  cells[i].classList.add(current==="X"?"x":"o");
+
+  soundMove.currentTime = 0;
+  soundMove.volume = 0.4;
+  soundMove.play();
+
+  if(checkResult()) return;
+
+  current = current==="X"?"O":"X";
+  statusText.textContent="دور اللاعب: "+current;
+
+  if(mode==="ai" && current==="O" && active){
+    setTimeout(()=>aiMove(),300);
+  }
+}
+
+function checkResult(){
+  const win = wins.some(line => line.every(index => board[index]===current));
+  if(win){
+    if(mode==="ai" && current==="O"){
+      showResultAI();
+    } else {
+      showResult(`🎉 فزت!`);
+    }
+    active=false;
+    return true;
+  }
+  if(board.every(c=>c!=="")){
+    showResultDraw();
+    active=false;
+    return true;
+  }
+  return false;
+}
+
+function showResultAI(){
+  popup.innerHTML=`
+    <div class="balloon red"></div>
+    <h2>💥 خسرت! 💥</h2>
+    <button onclick="resetGame()">إعادة اللعبة</button>`;
+  overlay.style.display="flex";
+  soundLose.currentTime = 0;
+  soundLose.volume = 0.4;
+  soundLose.play();
+}
+
+function showResultDraw(){
+  popup.innerHTML=`
+    <div class="balloon gold"></div>
+    <h2>✨ تعادل ✨</h2>
+    <button onclick="resetGame()">إعادة اللعبة</button>`;
+  overlay.style.display="flex";
+  soundDraw.currentTime = 0;
+  soundDraw.volume = 0.4;
+  soundDraw.play();
+}
+
+function showResult(text){
+  popup.innerHTML=`
+    <h2>${text}</h2>
+    <button onclick="resetGame()">إعادة اللعبة</button>`;
+  overlay.style.display="flex";
+  soundWin.currentTime = 0;
+  soundWin.volume = 0.4;
+  soundWin.play();
+}
+
+function aiMove(){
+  let move=-1;
+  if(aiLevel==="medium") move = simpleAI();
+  else if(aiLevel==="hard") move = hardAI();
+  else if(aiLevel==="impossible") move = minimax(board,'O').index;
+
+  if(move>=0){
+    board[move]="O";
+    cells[move].textContent="O";
+    cells[move].classList.add("o");
+    if(checkResult()) return;
+    current="X";
+    statusText.textContent="دور اللاعب: "+current;
+  }
+}
+
+function simpleAI(){
+  const empty = board.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+  return empty[Math.floor(Math.random()*empty.length)];
+}
+
+function hardAI(){
+  for(let i=0;i<9;i++){
+    if(board[i]===""){
+      board[i]="O";
+      if(wins.some(line => line.every(index => board[index]==="O"))){
+        board[i]="";
+        return i;
+      }
+      board[i]="";
+    }
+  }
+  for(let i=0;i<9;i++){
+    if(board[i]===""){
+      board[i]="X";
+      if(wins.some(line => line.every(index => board[index]==="X"))){
+        board[i]="";
+        return i;
+      }
+      board[i]="";
+    }
+  }
+  const options = [4,0,2,6,8,1,3,5,7];
+  for(let i of options) if(board[i]==="") return i;
+  return -1;
+}
+
+function minimax(newBoard,player){
+  const avail = newBoard.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+  if(wins.some(line => line.every(i=>newBoard[i]==="X"))) return {score:-10};
+  if(wins.some(line => line.every(i=>newBoard[i]==="O"))) return {score:10};
+  if(avail.length===0) return {score:0};
+
+  const moves = [];
+  for(let i of avail){
+    const move={index:i};
+    newBoard[i]=player;
+    const result = minimax(newBoard, player==="O"?"X":"O");
+    move.score = result.score;
+    newBoard[i]="";
+    moves.push(move);
+  }
+
+  let bestMove;
+  if(player==="O"){
+    let bestScore=-Infinity;
+    for(let m of moves){
+      if(m.score>bestScore){
+        bestScore=m.score;
+        bestMove=m;
+      }
+    }
+  } else {
+    let bestScore=Infinity;
+    for(let m of moves){
+      if(m.score<bestScore){
+        bestScore=m.score;
+        bestMove=m;
+      }
+    }
+  }
+  return bestMove;
+}
+
+function resetGame(){
+  board=["","","","","","","","",""];
+  cells.forEach(c=>{
+    c.textContent="";
+    c.className="cell";
+  });
+  current="X";
+  active=true;
+  statusText.textContent="دور اللاعب: X";
+  overlay.style.display="none";
+
+  startScreen.style.display="flex";
+  gameContainer.style.display="block";
+  aiLevelDiv.style.display="none";
+}
+</script>
+</body>
+</html>
